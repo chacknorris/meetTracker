@@ -1,0 +1,19 @@
+{
+  "name": "meettracker-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Servidor MCP local y de solo lectura para las reuniones de MeetTracker.",
+  "scripts": {
+    "check": "node scripts/check-server.mjs",
+    "start": "node src/server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.5",
+    "zod": "^3.25.76"
+  }
+}
