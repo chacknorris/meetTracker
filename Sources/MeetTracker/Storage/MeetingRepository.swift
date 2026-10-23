@@ -2,8 +2,15 @@ import Foundation
 
 struct MeetingRepository {
     let rootURL: URL
+    private let trashDirectory: (URL) throws -> Void
 
-    init(rootURL: URL? = nil) {
+    init(
+        rootURL: URL? = nil,
+        trashDirectory: @escaping (URL) throws -> Void = { url in
+            try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        }
+    ) {
+        self.trashDirectory = trashDirectory
         if let rootURL {
             self.rootURL = rootURL
             return
@@ -47,6 +54,21 @@ struct MeetingRepository {
         let directory = try createDirectory(for: session)
         let data = try JSONEncoder.meetTracker.encode(session)
         try data.write(to: directory.appendingPathComponent("session.json"), options: .atomic)
+    }
+
+    func moveToTrash(_ session: MeetingSession) throws {
+        let directory = directoryURL(for: session)
+        let values = try directory.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        guard values.isDirectory == true, values.isSymbolicLink != true else {
+            throw MeetingDeletionError.invalidDirectory
+        }
+        let data = try Data(contentsOf: directory.appendingPathComponent("session.json"))
+        let stored = try JSONDecoder.meetTracker.decode(MeetingSession.self, from: data)
+        guard stored.id == session.id else {
+            throw MeetingDeletionError.invalidDirectory
+        }
+        // Move the entire session together. Never fall back to permanent deletion.
+        try trashDirectory(directory)
     }
 
     func loadAll() throws -> [MeetingSession] {
@@ -95,6 +117,23 @@ struct MeetingRepository {
             conversation.markdown(title: session.title, startedAt: session.startedAt),
             for: session
         )
+    }
+}
+
+enum MeetingDeletionError: LocalizedError {
+    case unavailable
+    case busy
+    case invalidDirectory
+
+    var errorDescription: String? {
+        switch self {
+        case .unavailable:
+            return "Esta reunión ya no está disponible. Cierra esta confirmación y revisa la lista."
+        case .busy:
+            return "Espera a que termine la grabación o el procesamiento de esta reunión."
+        case .invalidDirectory:
+            return "No se pudo verificar la carpeta de esta reunión. No se movió ningún archivo."
+        }
     }
 }
 
