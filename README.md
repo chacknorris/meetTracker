@@ -51,6 +51,13 @@ El diseño separa la grabación de la transcripción. La app descubre
 `faster-whisper`, `torch` y `pyannote.audio`. Si ese entorno no está disponible,
 Apple Speech queda como respaldo.
 
+Para eliminar una reunión, usa **Eliminar…** en su detalle o **Eliminar reunión…**
+en el menú contextual de la lista. La confirmación muestra el nombre y la fecha,
+requiere marcar una casilla y mantiene **Cancelar** como acción predeterminada.
+La carpeta completa se mueve a la Papelera de macOS, donde se pueden recuperar
+sus archivos hasta vaciarla. No se permite eliminar una reunión mientras se graba,
+se transcribe o termina de cancelarse su procesamiento.
+
 En **MeetTracker > Configuración > Transcripción** se puede elegir:
 
 - **Whisper local** o **Apple Speech**;

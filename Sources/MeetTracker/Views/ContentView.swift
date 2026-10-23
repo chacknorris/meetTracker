@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var appModel: AppModel
+    @State private var deletionTarget: MeetingSession?
 
     var body: some View {
         NavigationSplitView {
@@ -10,6 +11,14 @@ struct ContentView: View {
                     ForEach(appModel.sessions) { session in
                         SessionRow(session: session)
                             .tag(session.id)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    deletionTarget = session
+                                } label: {
+                                    Label("Eliminar reunión…", systemImage: "trash")
+                                }
+                                .disabled(!appModel.canDelete(session))
+                            }
                     }
                 }
             }
@@ -32,13 +41,19 @@ struct ContentView: View {
             }
         } detail: {
             if let session = appModel.selectedSession {
-                SessionDetailView(session: session)
+                SessionDetailView(session: session) {
+                    deletionTarget = session
+                }
                     .id(session)
             } else {
                 WelcomeView()
             }
         }
         .toolbar { mainToolbar }
+        .sheet(item: $deletionTarget) { session in
+            DeleteMeetingView(session: session)
+                .environmentObject(appModel)
+        }
         .alert(
             "MeetTracker",
             isPresented: Binding(

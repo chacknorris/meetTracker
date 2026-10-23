@@ -165,7 +165,8 @@ final class AppModel: ObservableObject {
 
     func cancelTranscription(_ session: MeetingSession) {
         transcriptionTasks[session.id]?.cancel()
-        transcriptionTasks[session.id] = nil
+        // Keep tracking the task until it actually exits so its files cannot be
+        // moved while cancellation is still unwinding.
         guard var updated = sessions.first(where: { $0.id == session.id }) else {
             return
         }
@@ -491,6 +492,30 @@ final class AppModel: ObservableObject {
 
     func reveal(_ session: MeetingSession) {
         NSWorkspace.shared.activateFileViewerSelecting([repository.directoryURL(for: session)])
+    }
+
+    func canDelete(_ session: MeetingSession) -> Bool {
+        guard let current = sessions.first(where: { $0.id == session.id }) else { return false }
+        return coordinator.activeSession?.id != current.id
+            && current.transcriptionState != .transcribing
+            && transcriptionTasks[current.id] == nil
+            && transcriptionProgress[current.id] == nil
+    }
+
+    func moveToTrash(_ session: MeetingSession) throws {
+        guard let index = sessions.firstIndex(where: { $0.id == session.id }) else {
+            throw MeetingDeletionError.unavailable
+        }
+        let current = sessions[index]
+        guard canDelete(current) else { throw MeetingDeletionError.busy }
+
+        try repository.moveToTrash(current)
+        sessions.remove(at: index)
+        conversationCache[current.id] = nil
+        transcriptionProgress[current.id] = nil
+        if selection == current.id {
+            selection = sessions.isEmpty ? nil : sessions[min(index, sessions.count - 1)].id
+        }
     }
 
     func reload() {

@@ -3,6 +3,7 @@ import SwiftUI
 struct SessionDetailView: View {
     @EnvironmentObject private var appModel: AppModel
     let session: MeetingSession
+    let onRequestDeletion: () -> Void
     @State private var titleDraft = ""
     @State private var isEditingTitle = false
     @FocusState private var isTitleFocused: Bool
@@ -102,6 +103,15 @@ struct SessionDetailView: View {
                 } label: {
                     Label("Ver archivos", systemImage: "folder")
                 }
+                Button(role: .destructive, action: onRequestDeletion) {
+                    Label("Eliminar…", systemImage: "trash")
+                }
+                .disabled(!appModel.canDelete(session))
+                .help(
+                    appModel.canDelete(session)
+                        ? "Revisar y confirmar antes de mover esta reunión a la Papelera"
+                        : "Espera a que termine la grabación o el procesamiento de esta reunión"
+                )
             }
             .foregroundStyle(.secondary)
         }
